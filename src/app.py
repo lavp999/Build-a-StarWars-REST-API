@@ -8,8 +8,8 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
-#from models import Person
+from models import db, User, Character
+
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -36,14 +36,101 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/user', methods=['GET'])
-def handle_hello():
 
+@app.route('/people', methods=['GET'])
+def getPeople():
+    data = Character.query.all()
+
+    return jsonify(data), 200
+
+@app.route('/people/<int:people_id>', methods=['GET'])
+def getPerson(people_id):
     response_body = {
-        "msg": "Hello, this is your GET /user response "
+        "msg": "Metodo GET de person " + str(people_id)
     }
 
     return jsonify(response_body), 200
+
+
+@app.route('/planets', methods=['GET'])
+def getPlanets():
+    response_body = {
+        "msg": "Metodo GET de planets "
+    }
+
+    return jsonify(response_body), 200
+
+@app.route('/planets/<int:planet_id>', methods=['GET'])
+def getPlanet(planet_id):
+    response_body = {
+        "msg": "Metodo GET de planet " + str(planet_id)
+    }
+
+    return jsonify(response_body), 200
+
+@app.route('/users', methods=['GET'])
+def getUsers(planet_id):
+    response_body = {
+        "msg": "Metodo GET de User"
+    }
+
+    return jsonify(response_body), 200
+
+@app.route('/users/favorites', methods=['GET'])
+def getFavorites():
+    response_body = {
+        "msg": "Metodo GET de Favorites"
+    }
+
+    return jsonify(response_body), 200
+
+
+@app.route('/users/favorites/planet/<int:planet_id>', methods=['POST'])
+def getFavoritePlanet(planet_id):
+    response_body = {
+        "msg": "Metodo POST de Planets Favorites" + str(planet_id)
+    }
+
+    return jsonify(response_body), 200
+
+
+@app.route('/users/favorites/people/<int:people_id>', methods=['POST'])
+def getFavoritePeople(people_id):
+    response_body = {
+        "msg": "Metodo POST de People Favorites" + str(people_id)
+    }
+
+    return jsonify(response_body), 200
+
+
+@app.route('/users/favorites/planet/<int:planet_id>', methods=['DELETE'])
+def delFavoritePlanet(planet_id):
+    response_body = {
+        "msg": "Metodo DELETE de Planets Favorites" + str(planet_id)
+    }
+
+    return jsonify(response_body), 200
+
+@app.route('/users/favorites/people/<int:people_id>', methods=['DELETE'])
+def delFavoritePeople(people_id):
+    response_body = {
+        "msg": "Metodo DELETE de People Favorites" + str(people_id)
+    }
+
+    return jsonify(response_body), 200
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':

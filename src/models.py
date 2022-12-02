@@ -44,8 +44,6 @@ class User(db.Model):
             "last_name": self.last_name
         }
 
-
-
 class Planet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
@@ -62,9 +60,7 @@ class Planet(db.Model):
 
 class Character(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    id_planet = db.Column(db.Integer, ForeignKey('planet.id'), nullable=True)
     nombre = db.Column(db.String(100), nullable=False)
-    planet = db.relationship(Planet)
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -72,9 +68,7 @@ class Character(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "id_planet": self.id_planet,
             "nombre": self.nombre,
-            "planet": self.planet
         }
 
 class Favorit(db.Model):
