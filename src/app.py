@@ -11,7 +11,7 @@ from admin import setup_admin
 from models import db, User, Character, Planet, Favorit
 import json 
 from json import JSONEncoder
-
+from util_bbdd import delPlanetFav, delcharacterFav, delAmbosFav, existePlanetaFavorito, existeCharacterFavorito
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -106,9 +106,8 @@ def getUsers():
 
     return jsonify(data), 200
 
-
 # ------------------------------------------------------------
-# retorna los personajes y usuarios favoritos de el usuario "conectado"
+# retorna los personajes y usuarios favoritos de el usuario
 # ------------------------------------------------------------
 @app.route('/users/favorites', methods=['GET'])
 def getFavorites():
@@ -120,87 +119,118 @@ def getFavorites():
 
     return jsonify(data), 200
 
+# ------------------------------------------------------------
+# Añade un personaje
+# ------------------------------------------------------------
+@app.route('/people', methods=['POST'])
+def addPeople():
+    data = request.json
+
+    character = Character(nombre=data['nombre'])
+    db.session.add(character)
+    db.session.commit()
+    return jsonify({"mensaje": "Registro creado correctamente"}), 200
 
 # ------------------------------------------------------------
-# Añade un planeta favorito en el usuario "conectado"
+# Añade un planeta
+# ------------------------------------------------------------
+@app.route('/planet', methods=['POST'])
+def addPlanet():
+    data = request.json
+
+    planet = Planet(nombre=data['nombre'])
+    db.session.add(planet)
+    db.session.commit()
+    return jsonify({"mensaje": "Registro creado correctamente"}), 200
+
+# ------------------------------------------------------------
+# Modifica un planeta
+# ------------------------------------------------------------
+@app.route('/planet', methods=['PUT'])
+def modPlanet():
+    data = request.json
+    planet = Planet.query.filter_by(id=data['id']).first()
+
+    if planet:
+        planet.nombre = data['nombre']
+        db.session.commit()
+        return jsonify({"mensaje": "Planeta actualizado"}), 200
+    else:
+        return jsonify({"mensaje": "Planeta no encontrado"}), 400
+
+# ------------------------------------------------------------
+# Modifica un Character
+# ------------------------------------------------------------
+@app.route('/people', methods=['PUT'])
+def modPeople():
+    data = request.json
+    character = Character.query.filter_by(id=data['id']).first()
+
+    if character:
+        character.nombre = data['nombre']
+        db.session.commit()
+        return jsonify({"mensaje": "Character actualizado"}), 200
+    else:
+        return jsonify({"mensaje": "Character no encontrado"}), 400
+
+# ------------------------------------------------------------
+# Añade un planeta favorito en el usuario
 # ------------------------------------------------------------
 @app.route('/users/favorites/planet', methods=['POST'])
 def addFavoritePlanet():
-    # data = request.data
     data = request.json
-    # data = json.load(data)
 
-    favorit = Favorit(id_user=data['id_user'], tipo="P", id_planet=data['id_planet'])
-    db.session.add(favorit)
-    db.session.commit()
-   
-    return jsonify({"mensaje": "Registro creado correctamente"}), 200
-    # return jsonify({"msg": "No se ha podido crear como favorito el planeta" + str(planet_id)}), 400
-
+    if (existePlanetaFavorito(data['id_user'], data['id_planet'])):
+        return jsonify({"msg": "No se ha podido crear como favorito el User/Planeta" + str(data['id_user'])+"/"+str(data['id_planet']) +" porque ya existia"}), 400
+    else:
+        favorit = Favorit(id_user=data['id_user'], tipo="P", id_planet=data['id_planet'])
+        db.session.add(favorit)
+        db.session.commit()
+        return jsonify({"mensaje": "Registro creado correctamente"}), 200
 
 # ------------------------------------------------------------
-# Añade un personaje favorito en el usuario "conectado"
+# Añade un personaje favorito en el usuario
 # ------------------------------------------------------------
 @app.route('/users/favorites/people', methods=['POST'])
 def addFavoritePeople():
     data = request.json
 
-    favorit = Favorit(id_user=data['id_user'], tipo="C", id_character=data['id_character'])
-    db.session.add(favorit)
-    db.session.commit()
-   
-    return jsonify({"mensaje": "Registro creado correctamente"}), 200
+    if (existeCharacterFavorito(data['id_user'], data['id_character'])):
+        return jsonify({"msg": "No se ha podido crear como favorito el User/Character" + str(data['id_user'])+"/"+str(data['id_character']) +" porque ya existia"}), 400
+    else:
+        favorit = Favorit(id_user=data['id_user'], tipo="C", id_character=data['id_character'])
+        db.session.add(favorit)
+        db.session.commit()
+        return jsonify({"mensaje": "Registro creado correctamente"}), 200
+
 # ------------------------------------------------------------
-# Elimina un planeta favorito del usuario "conectado"
+# Elimina un planeta favorito del usuario
 # ------------------------------------------------------------
 @app.route('/users/favorites/planet', methods=['DELETE'])
 def delFavoriteplanet():
     data = request.json
 
-    n = Favorit.query.filter_by(id_user=data['id_user']).filter_by(id_planet=data['id_planet']).filter_by(tipo="P").delete()
-    if n == 1:
-        db.session.commit()
-        response_body = {"msg": "Borrado planet Favorites: " + str(data['id_planet']) + " del usuario: " + str(data['id_user'])}
-    elif n > 1:
-        db.session.rollback()
-        response_body = {"msg": "No se puede borrar Planet Favorites: " + str(data['id_planet']) + " del usuario: " + str(data['id_user']) + " tiene " +str(n)+ " registros"}
-    else:
-        db.session.rollback()
-        response_body = {"msg": "No existe Planet Favorites: " + str(data['id_planet']) + " del usuario: " + str(data['id_user'])}
+    return jsonify(delPlanetFav(data['id_user'], data['id_planet'])), 200
 
-    return jsonify(response_body), 200
 # ------------------------------------------------------------
-# Elimina un personaje favorito del usuario "conectado"
+# Elimina un personaje favorito del usuario
 # ------------------------------------------------------------
-@app.route('/users/favorites/people/<int:people_id>', methods=['DELETE'])
-def delFavoritePeople(people_id):
+@app.route('/users/favorites/people', methods=['DELETE'])
+def delFavoritePeople():
+    data = request.json
+    result = delcharacterFav(data['id_user'], data['id_character'])
+
+    return jsonify(result), 200
+    
+# ------------------------------------------------------------
+# Elimina un personaje/planeta favorito del usuario
+# ------------------------------------------------------------
+@app.route('/users/favorites/people/planet', methods=['DELETE'])
+def delFavoriteAmbos():
     data = request.json
 
-    n = Favorit.query.filter_by(id_user=data['id_user']).filter_by(id_characater=data['id_character']).filter_by(tipo="C").delete()
-    if n == 1:
-        db.session.commit()
-        response_body = {"msg": "Borrado Character Favorites: " + str(data['id_character']) + " del usuario: " + str(data['id_user'])}
-    elif n > 1:
-        db.session.rollback()
-        response_body = {"msg": "No se puede borrar Character Favorites: " + str(data['id_character']) + " del usuario: " + str(data['id_user']) + " tiene " +str(n)+ " registros"}
-    else:
-        db.session.rollback()
-        response_body = {"msg": "No existe Character Favorites: " + str(data['id_character']) + " del usuario: " + str(data['id_user'])}
-
-    return jsonify(response_body), 200
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return jsonify(delAmbosFav(data['id_user'], data['id_planet'], data['id_character'])), 200
+    
 
 # this only runs if `$ python src/app.py` is executed
 if __name__ == '__main__':
